@@ -22,8 +22,11 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
+
+	"github.com/jonascheng/mitmproxy-demo/helloworld/greeter_client/util"
 
 	pb "github.com/jonascheng/mitmproxy-demo/helloworld/helloworld"
 	"google.golang.org/grpc"
@@ -40,9 +43,13 @@ var (
 )
 
 func main() {
-	flag.Parse()
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config:", err)
+	}
+
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GrpcServerIp, config.GrpcServerPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -52,7 +59,7 @@ func main() {
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *name})
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: config.ClientName})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
