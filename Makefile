@@ -2,7 +2,7 @@
 
 .PHONY: setup
 setup:	## setup go modules
-	cd helloworld/helloworld && protoc --go_out=:. --go-grpc_out=. helloworld.proto
+	cd helloworld/proto/helloworld && protoc --go_out=:. --go-grpc_out=. helloworld.proto
 	cd helloworld/greeter_server && go mod tidy
 	cd helloworld/greeter_client && go mod tidy
 
