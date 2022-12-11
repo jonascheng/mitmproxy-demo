@@ -2,8 +2,11 @@
 
 .PHONY: setup
 setup:	## setup go modules
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2
-	cd helloworld/proto/helloworld && protoc --go_out=:. --go-grpc_out=. helloworld.proto
+	cd helloworld/ && protoc -I ./proto \
+		--go_out ./proto --go_opt paths=source_relative \
+		--go-grpc_out ./proto  --go-grpc_opt paths=source_relative \
+		--grpc-gateway_out ./proto  --grpc-gateway_opt paths=source_relative \
+		./proto/helloworld.proto
 	cd helloworld/greeter_server && go mod tidy
 	cd helloworld/greeter_client && go mod tidy
 

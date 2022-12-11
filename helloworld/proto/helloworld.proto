@@ -22,16 +22,16 @@ option java_outer_classname = "HelloWorldProto";
 
 package helloworld;
 
-// import "google/api/annotations.proto";
+import "google/api/annotations.proto";
 
 // The greeting service definition.
 service Greeter {
   // Sends a greeting
   rpc SayHello (HelloRequest) returns (HelloReply) {
-//    option (google.api.http) = {
-//      post: "/v1/example/echo"
-//      body: "*"
-//    };
+   option (google.api.http) = {
+     post: "/v1/echo"
+     body: "*"
+   };
   }
 }
 
