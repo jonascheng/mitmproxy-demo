@@ -27,7 +27,7 @@ import (
 
 	"github.com/jonascheng/mitmproxy-demo/helloworld/greeter_server/util"
 
-	pb "github.com/jonascheng/mitmproxy-demo/helloworld/helloworld"
+	pb "github.com/jonascheng/mitmproxy-demo/helloworld/proto/helloworld"
 	"google.golang.org/grpc"
 )
 
