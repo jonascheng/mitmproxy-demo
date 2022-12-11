@@ -3,7 +3,7 @@ module github.com/jonascheng/mitmproxy-demo/helloworld/greeter_server
 go 1.19
 
 require (
-	github.com/jonascheng/mitmproxy-demo v0.0.0-20221120134414-41407c3ba330
+	github.com/jonascheng/mitmproxy-demo v0.0.0-20221208111516-3671eadad22f
 	github.com/spf13/viper v1.14.0
 	google.golang.org/grpc v1.51.0
 )
