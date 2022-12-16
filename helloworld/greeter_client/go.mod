@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/jonascheng/mitmproxy-demo v0.0.0-20221211085134-4f464511f56f
+	github.com/mwitkow/go-http-dialer v0.0.0-20161116154839-378f744fb2b8
 	github.com/spf13/viper v1.14.0
 	google.golang.org/grpc v1.51.0
 )

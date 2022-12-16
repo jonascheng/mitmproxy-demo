@@ -24,11 +24,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/jonascheng/mitmproxy-demo/helloworld/greeter_client/util"
 
 	pb "github.com/jonascheng/mitmproxy-demo/helloworld/proto"
+	http_dialer "github.com/mwitkow/go-http-dialer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -49,7 +52,27 @@ func main() {
 	}
 
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.ServerIp, config.ServerPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dialOptions := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if config.ServerProxy != "" {
+		dialer := grpc.WithContextDialer(func(c context.Context, s string) (net.Conn, error) {
+			proxyURL, err := url.Parse(config.ServerProxy)
+
+			if err != nil {
+				return nil, err
+			}
+
+			dialer := http_dialer.New(proxyURL)
+			log.Printf("Proxy: %s", proxyURL)
+
+			return dialer.Dial("tcp", s)
+		})
+		dialOptions = append(dialOptions, dialer)
+	}
+
+	conn, err := grpc.Dial(
+		fmt.Sprintf("%s:%d", config.ServerIp, config.ServerPort),
+		dialOptions...)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

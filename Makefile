@@ -16,7 +16,11 @@ run-greeter-server: setup	## runs go run the application
 
 .PHONY: run-greeter-grpc-client
 run-greeter-grpc-client: setup	## runs go run the application to issue grpc request
-	cd helloworld/greeter_client && go run main.go
+	cd helloworld/greeter_client && cp app.noproxy.env app.env && go run main.go
+
+.PHONY: run-greeter-grpc-client-via-proxy
+run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue grpc request
+	cd helloworld/greeter_client && cp app.proxy.env app.env && go run main.go
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request

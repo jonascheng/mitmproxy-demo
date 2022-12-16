@@ -5,9 +5,10 @@ import (
 )
 
 type Config struct {
-	ClientName string `mapstructure:"CLIENT_NAME"`
-	ServerIp   string `mapstructure:"SERVER_IP"`
-	ServerPort uint32 `mapstructure:"SERVER_PORT"`
+	ClientName  string `mapstructure:"CLIENT_NAME"`
+	ServerIp    string `mapstructure:"SERVER_IP"`
+	ServerPort  uint32 `mapstructure:"SERVER_PORT"`
+	ServerProxy string `mapstructure:"SERVER_PROXY"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
