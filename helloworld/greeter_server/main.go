@@ -53,20 +53,26 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 	}
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		clientIP = ""
 		rips := md.Get("x-real-ip")
 		if len(rips) != 0 {
 			log.Printf("x-real-ip: %v", rips)
 			clientIP = rips[0]
 		}
-		log.Println("Received from client IP: ", clientIP)
+		log.Println("Received from client IP (x-real-ip): ", clientIP)
 	}
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		rips := md.Get("x-forwarded-for")
-		if len(rips) != 0 {
-			log.Printf("x-forwarded-for: %v", rips)
-			clientIP = rips[0]
+		clientIP = ""
+		fwdAddress := md.Get("x-forwarded-for")
+		if len(fwdAddress) != 0 {
+			rips := strings.Split(fwdAddress[0], ", ")
+			if len(rips) != 0 {
+				log.Printf("Received x-forwarded-for: %v", rips)
+				clientIP = rips[0]
+			}
 		}
+		log.Println("Received from client IP (x-forwarded-for[0]): ", clientIP)
 	}
 
 	// peer IP

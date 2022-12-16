@@ -64,4 +64,8 @@ func main() {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
+
+	// pause on purpose
+	fmt.Println("Press the Enter Key to terminate the console screen!")
+	fmt.Scanln() // wait for Enter Key
 }
