@@ -25,11 +25,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/jonascheng/mitmproxy-demo/helloworld/greeter_server/util"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	pb "github.com/jonascheng/mitmproxy-demo/helloworld/proto"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -52,43 +55,45 @@ func main() {
 	}
 
 	// Create a listener on TCP port
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GrpcListenPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ServerListenPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
 	// Create a gRPC server
 	s := grpc.NewServer()
+	// Greeter service
 	pb.RegisterGreeterServer(s, &server{})
-	log.Printf("server listening at %v", lis.Addr())
-	go func() {
-		log.Fatalln(s.Serve(lis))
-	}()
-	// if err := s.Serve(lis); err != nil {
-	// 	log.Fatalf("failed to serve: %v", err)
-	// }
 
-	// Create a connection to previous gRPC server
-	// gRPC-Gateway forward HTTP request to the gRPC server
-	conn, err := grpc.DialContext(
-		context.Background(),
-		fmt.Sprintf("0.0.0.0:%d", config.GrpcListenPort),
-		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Fatalln("Failed to dial server:", err)
-	}
-
+	// Create a gRPC-Gateway mux
 	gwmux := runtime.NewServeMux()
-	err = pb.RegisterGreeterHandler(context.Background(), gwmux, conn)
+	dops := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err = pb.RegisterGreeterHandlerFromEndpoint(context.Background(), gwmux, fmt.Sprintf("127.0.0.1:%d", config.ServerListenPort), dops)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register gwmux:", err)
 	}
 
+	mux := http.NewServeMux()
+	mux.Handle("/", gwmux)
+
+	// Define HTTP server configuration
 	gwServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.HttpListenPort),
-		Handler: gwmux,
+		Addr:    fmt.Sprintf("127.0.0.1:%d", config.ServerListenPort),
+		Handler: grpcHandlerFunc(s, mux), // unified request entry
 	}
-	log.Printf("Serving gRPC-Gateway at [::]%d", config.HttpListenPort)
-	log.Fatalln(gwServer.ListenAndServe())
+	log.Println("Serving on http://127.0.0.1:", config.ServerListenPort)
+	log.Fatalln(gwServer.Serve(lis)) // start http server
+}
+
+// grpcHandlerFunc to distinguish gPRC and HTTP requests
+func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			log.Printf("Received a grpc request")
+			grpcServer.ServeHTTP(w, r)
+		} else {
+			log.Printf("Received a http request, forward to gRPC-Gateway")
+			otherHandler.ServeHTTP(w, r)
+		}
+	}), &http2.Server{})
 }

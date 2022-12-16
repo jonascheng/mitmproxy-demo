@@ -5,9 +5,9 @@ import (
 )
 
 type Config struct {
-	ClientName     string `mapstructure:"CLIENT_NAME"`
-	GrpcServerIp   string `mapstructure:"GRPC_SERVER_IP"`
-	GrpcServerPort uint32 `mapstructure:"GRPC_SERVER_PORT"`
+	ClientName string `mapstructure:"CLIENT_NAME"`
+	ServerIp   string `mapstructure:"SERVER_IP"`
+	ServerPort uint32 `mapstructure:"SERVER_PORT"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
