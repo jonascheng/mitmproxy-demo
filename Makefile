@@ -24,7 +24,7 @@ run-greeter-http-client: ## runs go run the application to issue http request
 
 .PHONY: run-greeter-http-client-via-proxy
 run-greeter-http-client-via-proxy: ## runs go run the application to issue http request
-	curl --proxy http://10.1.0.30:8080/ -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}'
+	curl --proxy 10.1.0.30:8080 -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}'
 
 .PHONY: run-mitmproxy
 run-mitmproxy:	## run mitmproxy, and listen on port 8080
