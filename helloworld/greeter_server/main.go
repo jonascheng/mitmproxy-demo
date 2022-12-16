@@ -35,6 +35,8 @@ import (
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 // server is used to implement helloworld.GreeterServer.
@@ -44,6 +46,40 @@ type server struct {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	// client IP from metadata
+	var clientIP string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		log.Printf("metadata: %v", md)
+	}
+
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		rips := md.Get("x-real-ip")
+		if len(rips) != 0 {
+			log.Printf("x-real-ip: %v", rips)
+			clientIP = rips[0]
+		}
+		log.Println("Received from client IP: ", clientIP)
+	}
+
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		rips := md.Get("x-forwarded-for")
+		if len(rips) != 0 {
+			log.Printf("x-forwarded-for: %v", rips)
+			clientIP = rips[0]
+		}
+	}
+
+	// peer IP
+	var peerIP string
+	if pr, ok := peer.FromContext(ctx); ok {
+		if tcpAddr, ok := pr.Addr.(*net.TCPAddr); ok {
+			peerIP = tcpAddr.IP.String()
+		} else {
+			peerIP = pr.Addr.String()
+		}
+		log.Println("Received from peer IP: ", peerIP)
+	}
+
 	log.Printf("Received: %v", in.GetName())
 	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
@@ -68,7 +104,7 @@ func main() {
 	// Create a gRPC-Gateway mux
 	gwmux := runtime.NewServeMux()
 	dops := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err = pb.RegisterGreeterHandlerFromEndpoint(context.Background(), gwmux, fmt.Sprintf("127.0.0.1:%d", config.ServerListenPort), dops)
+	err = pb.RegisterGreeterHandlerFromEndpoint(context.Background(), gwmux, fmt.Sprintf("0.0.0.0:%d", config.ServerListenPort), dops)
 	if err != nil {
 		log.Fatalln("Failed to register gwmux:", err)
 	}
@@ -78,10 +114,10 @@ func main() {
 
 	// Define HTTP server configuration
 	gwServer := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", config.ServerListenPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", config.ServerListenPort),
 		Handler: grpcHandlerFunc(s, mux), // unified request entry
 	}
-	log.Println("Serving on http://127.0.0.1:", config.ServerListenPort)
+	log.Println("Serving on http://0.0.0.0:", config.ServerListenPort)
 	log.Fatalln(gwServer.Serve(lis)) // start http server
 }
 

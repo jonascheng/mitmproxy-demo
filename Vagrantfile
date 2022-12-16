@@ -10,9 +10,13 @@ Vagrant.configure("2") do |config|
   config.vm.provision "docker"
   config.vm.provision "shell", inline: $script, privileged: false
 
-  config.vm.define "client" do |node|
-    node.vm.hostname = "server1"
+  config.vm.define "server" do |node|
+    node.vm.hostname = "server"
     node.vm.network "private_network", ip: "10.1.0.10", hostname: true
   end
 
+  config.vm.define "client" do |node|
+    node.vm.hostname = "client"
+    node.vm.network "private_network", ip: "10.1.0.20", hostname: true
+  end
 end
