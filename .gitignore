@@ -2,3 +2,4 @@
 grpc-go/**
 **/greeter_client/app.env
 **/nginx/server.*
+grpcurl*

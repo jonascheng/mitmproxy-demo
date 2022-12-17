@@ -16,19 +16,21 @@ run-greeter-server: setup	## runs go run the application
 
 .PHONY: run-greeter-grpc-client
 run-greeter-grpc-client: setup	## runs go run the application to issue grpc request
-	cd helloworld/greeter_client && cp app.noproxy.env app.env && go run main.go
+	# cd helloworld/greeter_client && cp app.noproxy.env app.env && go run main.go
+	grpcurl -plaintext -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-grpc-client-via-proxy
 run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue grpc request
-	cd helloworld/greeter_client && cp app.proxy.env app.env && go run main.go
+	# cd helloworld/greeter_client && cp app.proxy.env app.env && go run main.go
+	HTTPS_PROXY=https://10.1.0.30:8081 grpcurl -plaintext -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request
-	curl -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http"}'
+	curl -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
 
 .PHONY: run-greeter-http-client-via-proxy
 run-greeter-http-client-via-proxy: ## runs go run the application to issue http request
-	curl --proxy 10.1.0.30:8080 -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}'
+	curl --proxy 10.1.0.30:8080 -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}' | python -m json.tool
 
 .PHONY: run-mitmproxy
 run-mitmproxy:	## run mitmproxy, and listen on port 8080
