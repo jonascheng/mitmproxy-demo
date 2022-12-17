@@ -22,7 +22,7 @@ run-greeter-grpc-client: setup	## runs go run the application to issue grpc requ
 .PHONY: run-greeter-grpc-client-via-proxy
 run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue grpc request
 	# cd helloworld/greeter_client && cp app.proxy.env app.env && go run main.go
-	HTTPS_PROXY=https://10.1.0.30:8081 grpcurl -plaintext -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
+	HTTPS_PROXY=https://10.1.0.30:8081 grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request
@@ -43,7 +43,11 @@ run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
 
 .PHONY: setup-ngx-key
 setup-ngx-key: ## generate nginx server cert
-	openssl req -newkey rsa:2048 -nodes -keyout /vagrant/nginx/server.key -x509 -days 365 -out /vagrant/nginx/server.crt
+	openssl req -newkey rsa:2048 -nodes \
+		-addext "subjectAltName = IP:10.1.0.30" \
+		-keyout /vagrant/nginx/server.key \
+		-x509 -days 365 \
+		-out /vagrant/nginx/server.crt
 
 .PHONY: help
 help: ## prints this help message
