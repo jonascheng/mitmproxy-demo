@@ -96,6 +96,15 @@ func main() {
 		log.Fatal("cannot load config:", err)
 	}
 
+	// serve with unified request entry
+	startUnifiedServer(config)
+	// startServer(config)
+}
+
+func startServer(config util.Config) {
+}
+
+func startUnifiedServer(config util.Config) {
 	// Create a listener on TCP port
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ServerListenPort))
 	if err != nil {

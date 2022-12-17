@@ -35,9 +35,13 @@ run-mitmproxy:	## run mitmproxy, and listen on port 8080
 	docker run --rm -it -v ~/.mitmproxy:/home/mitmproxy/.mitmproxy -p 8080:8080 mitmproxy/mitmproxy
 
 .PHONY: run-ngxproxy
-run-ngxproxy:	## run nginx proxy, and listen on port 8080
-	# docker run --rm -it -v /vagrant/nginx/nginx_whitelist.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 reiz/nginx_proxy:0.0.3
-	docker run --rm -it -v /vagrant/nginx/nginx_whitelist.conf:/etc/nginx/nginx.conf:ro -p 8080:8080 nginx:alpine-slim
+run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
+	# docker run --rm -it -v /vagrant/nginx/nginx.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 reiz/nginx_proxy:0.0.3
+	docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
+
+.PHONY: setup-ngx-key
+setup-ngx-key: ## generate nginx server cert
+	openssl req -newkey rsa:2048 -nodes -keyout /vagrant/nginx/server.key -x509 -days 365 -out /vagrant/nginx/server.crt
 
 .PHONY: help
 help: ## prints this help message
