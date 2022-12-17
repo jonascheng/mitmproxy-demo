@@ -97,11 +97,51 @@ func main() {
 	}
 
 	// serve with unified request entry
-	startUnifiedServer(config)
-	// startServer(config)
+	// startUnifiedServer(config)
+	startServer(config)
 }
 
 func startServer(config util.Config) {
+	// Create a listener on TCP port
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GrpcListenPort))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	// Create a gRPC server
+	s := grpc.NewServer()
+	// Register Greeter service
+	pb.RegisterGreeterServer(s, &server{})
+	// Start GRPC server
+	log.Printf("server listening at %v", lis.Addr())
+	go func() {
+		log.Fatalln(s.Serve(lis))
+	}()
+
+	// Create a connection to previous gRPC server
+	// gRPC-Gateway forward HTTP request to the gRPC server
+	conn, err := grpc.DialContext(
+		context.Background(),
+		fmt.Sprintf("0.0.0.0:%d", config.GrpcListenPort),
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial server:", err)
+	}
+
+	gwmux := runtime.NewServeMux()
+	err = pb.RegisterGreeterHandler(context.Background(), gwmux, conn)
+	if err != nil {
+		log.Fatalln("Failed to register gateway:", err)
+	}
+
+	gwServer := &http.Server{
+		Addr:    fmt.Sprintf(":%d", config.HttpListenPort),
+		Handler: gwmux,
+	}
+	log.Printf("Serving gRPC-Gateway at [::]%d", config.HttpListenPort)
+	log.Fatalln(gwServer.ListenAndServe())
 }
 
 func startUnifiedServer(config util.Config) {
@@ -113,7 +153,7 @@ func startUnifiedServer(config util.Config) {
 
 	// Create a gRPC server
 	s := grpc.NewServer()
-	// Greeter service
+	// Register Greeter service
 	pb.RegisterGreeterServer(s, &server{})
 
 	// Create a gRPC-Gateway mux
