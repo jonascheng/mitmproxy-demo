@@ -10,44 +10,53 @@ setup:	## setup go modules
 	cd helloworld/greeter_server && go mod tidy
 	cd helloworld/greeter_client && go mod tidy
 
+.PHONY: setup-server-key
+setup-server-key: ## generate grpc server cert
+	cd helloworld/greeter_server && SITE_NAME=10.1.0.10 /vagrant/provision/cert-gen.sh
+
 .PHONY: run-greeter-server
 run-greeter-server: setup	## runs go run the application
 	cd helloworld/greeter_server && go run main.go
 
+.PHONY: setup-ngx-key
+setup-ngx-key: ## generate nginx server cert
+	cd /vagrant/nginx/ && SITE_NAME=10.1.0.30 /vagrant/provision/cert-gen.sh
+	provision/trust-self-signed.sh
+
+.PHONY: run-ngxproxy
+run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
+	docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
+
+.PHONY: run-squidproxy
+run-squidproxy:	## run squid proxy, and listen on port 8080 (http)
+	docker run --rm -it -p 8080:3128 docker.io/salrashid123/squidproxy /apps/squid/sbin/squid -NsY -f /apps/squid.conf.forward
+
 .PHONY: run-greeter-grpc-client
 run-greeter-grpc-client: setup	## runs go run the application to issue grpc request
-	# cd helloworld/greeter_client && cp app.noproxy.env app.env && go run main.go
-	grpcurl -plaintext -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
+	grpcurl -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-grpc-client-via-proxy
 run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue grpc request
-	# cd helloworld/greeter_client && cp app.proxy.env app.env && go run main.go
-	HTTPS_PROXY=https://10.1.0.30:8081 grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
+	HTTPS_PROXY=http://10.1.0.30:8080 \
+	grpcurl -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request
-	curl -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
+	curl -X POST -k https://10.1.0.10:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
 
 .PHONY: run-greeter-http-client-via-proxy
 run-greeter-http-client-via-proxy: ## runs go run the application to issue http request
-	curl --proxy 10.1.0.30:8080 -X POST -k http://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}' | python -m json.tool
+	http_proxy="10.1.0.30:8080" \
+	https_proxy="10.1.0.30:8080" \
+	curl -X POST -k https://10.1.0.10:8080/v1/echo -d '{"name": "http-proxy"}' | python -m json.tool
 
 .PHONY: run-mitmproxy
 run-mitmproxy:	## run mitmproxy, and listen on port 8080
 	docker run --rm -it -v ~/.mitmproxy:/home/mitmproxy/.mitmproxy -p 8080:8080 mitmproxy/mitmproxy
 
-.PHONY: run-ngxproxy
-run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
-	# docker run --rm -it -v /vagrant/nginx/nginx.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 reiz/nginx_proxy:0.0.3
-	docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
-
-.PHONY: setup-ngx-key
-setup-ngx-key: ## generate nginx server cert
-	openssl req -newkey rsa:2048 -nodes \
-		-addext "subjectAltName = IP:10.1.0.30" \
-		-keyout /vagrant/nginx/server.key \
-		-x509 -days 365 \
-		-out /vagrant/nginx/server.crt
+.PHONY: setup-client-ca
+setup-client-ca: ## trust self signed cert
+	provision/trust-self-signed.sh
 
 .PHONY: help
 help: ## prints this help message

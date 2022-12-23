@@ -34,6 +34,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -108,8 +109,16 @@ func startServer(config util.Config) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	// Load server's certificate and private key
+	creds, err := credentials.NewServerTLSFromFile("server-cert.pem", "server-key.pem")
+	if err != nil {
+		// log.Fatalf("failed to load x509 key pair: %v", err)
+		log.Fatalf("failed to create server TLS credentials %v", err)
+	}
+
 	// Create a gRPC server
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.Creds(creds))
+
 	// Register Greeter service
 	pb.RegisterGreeterServer(s, &server{})
 	// Start GRPC server
@@ -118,13 +127,19 @@ func startServer(config util.Config) {
 		log.Fatalln(s.Serve(lis))
 	}()
 
+	// Create client's certificate
+	dcreds, err := credentials.NewClientTLSFromFile("server-cert.pem", "10.1.0.10")
+	if err != nil {
+		log.Printf("failed to create client TLS credentials %v", err)
+	}
+
 	// Create a connection to previous gRPC server
 	// gRPC-Gateway forward HTTP request to the gRPC server
 	conn, err := grpc.DialContext(
 		context.Background(),
 		fmt.Sprintf("0.0.0.0:%d", config.GrpcListenPort),
 		grpc.WithBlock(),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(dcreds),
 	)
 	if err != nil {
 		log.Fatalln("Failed to dial server:", err)
@@ -141,7 +156,7 @@ func startServer(config util.Config) {
 		Handler: gwmux,
 	}
 	log.Printf("Serving gRPC-Gateway at [::]%d", config.HttpListenPort)
-	log.Fatalln(gwServer.ListenAndServe())
+	log.Fatalln(gwServer.ListenAndServeTLS("server-cert.pem", "server-key.pem"))
 }
 
 func startUnifiedServer(config util.Config) {
