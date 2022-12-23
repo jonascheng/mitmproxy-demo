@@ -39,11 +39,11 @@ To find a common way to get source IP no matter direct connection, via forward p
 
 Client (10.1.0.20) > [(opt) Proxy (10.1.0.30) >] Server (10.1.0.10)
 
-| Use Case    | peer        | x-real-ip   | x-forwarded-for[0] |
-| ----------- | ----------- | ----------- | ------------------ |
-| DIRECT GRPC | 10.1.0.20   | N/A         | N/A                |
-| DIRECT HTTP | 127.0.0.1   | N/A         | 10.1.0.20          |
-| FWProxy GRPC| 10.1.0.30   | N/A         | N/A                |
-| FWProxy HTTP| 127.0.0.1   | N/A         | 10.1.0.30          |
-| MITM GRPC   | 10.1.0.30   | N/A         | N/A                |
-| MITM HTTP   | 127.0.0.1   | N/A         | 10.1.0.30          |
+| Use Case    | peer        | x-real-ip   | x-forwarded-host | x-forwarded-for  |
+| ----------- | ----------- | ----------- | ---------------- | ---------------- |
+| DIRECT GRPC | 10.1.0.20   | N/A         | N/A              | N/A              |
+| DIRECT HTTP | 127.0.0.1   | N/A         | 10.1.0.10:8080   | 10.1.0.20        |
+| FWProxy GRPC| 10.1.0.30   | N/A         | N/A              | N/A              |
+| FWProxy HTTP| 127.0.0.1   | N/A         | 10.1.0.10:8080   | 10.1.0.30        |
+| MITM GRPC   | 10.1.0.30   | N/A         | N/A              | N/A              |
+| MITM HTTP   | 127.0.0.1   | N/A         | 10.1.0.10:8080   | 10.1.0.30        |

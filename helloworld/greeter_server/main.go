@@ -60,7 +60,19 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 			log.Printf("x-real-ip: %v", rips)
 			clientIP = rips[0]
 		}
-		log.Println("Received from client IP (x-real-ip): ", clientIP)
+		log.Println("Received x-real-ip: ", clientIP)
+	}
+
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		clientIP = ""
+		fwdAddress := md.Get("x-forwarded-host")
+		if len(fwdAddress) != 0 {
+			rips := strings.Split(fwdAddress[0], ", ")
+			if len(rips) != 0 {
+				log.Printf("Received x-forwarded-host: %v", rips)
+				clientIP = rips[0]
+			}
+		}
 	}
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
@@ -73,7 +85,6 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 				clientIP = rips[0]
 			}
 		}
-		log.Println("Received from client IP (x-forwarded-for[0]): ", clientIP)
 	}
 
 	// peer IP
@@ -101,6 +112,23 @@ func main() {
 	// startUnifiedServer(config)
 	startServer(config)
 }
+
+// Mapping from HTTP request headers to gRPC client metadata
+func CustomMatcher(key string) (string, bool) {
+	log.Printf("CustomMatcher: %s", key)
+	switch key {
+	default:
+		return runtime.DefaultHeaderMatcher(key)
+	}
+}
+
+// func CustomMD(ctx context.Context, request *http.Request) metadata.MD {
+// 	log.Printf("%v", request.Header)
+// 	header := request.Header.Get("x-forwarded-for")
+// 	// send all the headers received from the client
+// 	md := metadata.Pairs("auth", header)
+// 	return md
+// }
 
 func startServer(config util.Config) {
 	// Create a listener on TCP port
@@ -145,10 +173,13 @@ func startServer(config util.Config) {
 		log.Fatalln("Failed to dial server:", err)
 	}
 
-	gwmux := runtime.NewServeMux()
+	gwmux := runtime.NewServeMux(
+		// runtime.WithMetadata(CustomMD),
+		runtime.WithIncomingHeaderMatcher(CustomMatcher),
+	)
 	err = pb.RegisterGreeterHandler(context.Background(), gwmux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("failed to register gateway:", err)
 	}
 
 	gwServer := &http.Server{
