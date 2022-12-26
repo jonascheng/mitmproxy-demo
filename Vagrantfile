@@ -18,21 +18,21 @@ Vagrant.configure("2") do |config|
   config.vm.define "server" do |node|
     node.vm.provision "shell", inline: $go, privileged: false
     node.vm.hostname = "server"
-    node.vm.network "private_network", ip: "10.1.0.10", hostname: true
+    node.vm.network "private_network", ip: "192.168.1.10", hostname: true, netmask: '255.255.255.0'
   end
 
   config.vm.define "client" do |node|
     node.vm.provision "shell", inline: $go, privileged: false
     node.vm.provision "shell", inline: $client, privileged: false
     node.vm.hostname = "client"
-    node.vm.network "private_network", ip: "10.1.0.20", hostname: true
+    node.vm.network "private_network", ip: "172.31.1.10", hostname: true, netmask: '255.255.255.0'
   end
 
   config.vm.define "proxy" do |node|
     node.vm.provision "docker"
     node.vm.provision "shell", inline: $proxy, privileged: false
     node.vm.hostname = "proxy"
-    node.vm.network "private_network", ip: "10.1.0.30", hostname: true
+    node.vm.network "private_network", ip: "172.31.1.20", hostname: true, netmask: '255.255.255.0'
   end
 
 end

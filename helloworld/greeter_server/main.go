@@ -156,7 +156,7 @@ func startServer(config util.Config) {
 	}()
 
 	// Create client's certificate
-	dcreds, err := credentials.NewClientTLSFromFile("server-cert.pem", "10.1.0.10")
+	dcreds, err := credentials.NewClientTLSFromFile("server-cert.pem", config.ServerIp)
 	if err != nil {
 		log.Printf("failed to create client TLS credentials %v", err)
 	}

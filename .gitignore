@@ -1,6 +1,9 @@
 .vagrant/**
 grpc-go/**
+**/greeter_server/app.env
+**/greeter_server/server-ext.cnf
 **/greeter_client/app.env
 grpcurl*
 *.pem
 *.srl
+**/main

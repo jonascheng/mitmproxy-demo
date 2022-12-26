@@ -1,5 +1,7 @@
 .DEFAULT_GOAL := help
 
+SERVER_IP?=192.168.1.10
+
 .PHONY: setup
 setup:	## setup go modules
 	cd helloworld/ && protoc -I ./proto \
@@ -8,19 +10,22 @@ setup:	## setup go modules
 		--grpc-gateway_out ./proto  --grpc-gateway_opt paths=source_relative \
 		./proto/helloworld.proto
 	cd helloworld/greeter_server && go mod tidy
-	cd helloworld/greeter_client && go mod tidy
+	# cd helloworld/greeter_client && go mod tidy
 
 .PHONY: setup-server-key
 setup-server-key: ## generate grpc server cert
-	cd helloworld/greeter_server && SITE_NAME=10.1.0.10 /vagrant/provision/cert-gen.sh
+	echo "subjectAltName=DNS:${SERVER_IP},IP:${SERVER_IP}" > ./helloworld/greeter_server/server-ext.cnf
+	cd helloworld/greeter_server && SITE_NAME=${SERVER_IP} /vagrant/provision/cert-gen.sh
 
 .PHONY: run-greeter-server
 run-greeter-server: setup	## runs go run the application
-	cd helloworld/greeter_server && go run main.go
+	sed 's/__SERVER_IP__/${SERVER_IP}/g' ./helloworld/greeter_server/app.env.tmpl > ./helloworld/greeter_server/app.env
+	cd helloworld/greeter_server && go build main.go
+	cd helloworld/greeter_server && ./main
 
 # .PHONY: setup-ngx-key
 # setup-ngx-key: ## generate nginx server cert
-# 	cd /vagrant/nginx/ && SITE_NAME=10.1.0.30 /vagrant/provision/cert-gen.sh
+# 	cd /vagrant/nginx/ && SITE_NAME=172.31.1.20 /vagrant/provision/cert-gen.sh
 
 # .PHONY: run-ngxproxy
 # run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
@@ -45,22 +50,22 @@ run-mitmproxy: ## run mitmproxy, and listen on port 8080
 
 .PHONY: run-greeter-grpc-client
 run-greeter-grpc-client: setup	## runs go run the application to issue grpc request
-	grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
+	grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc"}' ${SERVER_IP}:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-grpc-client-via-proxy
 run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue grpc request
-	HTTPS_PROXY=http://10.1.0.30:8080 \
-	grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc-via-proxy"}' 10.1.0.10:8081 helloworld.Greeter/SayHello
+	HTTPS_PROXY=http://172.31.1.20:8080 \
+	grpcurl -insecure -import-path helloworld/proto/ -proto helloworld.proto -d '{"name": "grpc-via-proxy"}' ${SERVER_IP}:8081 helloworld.Greeter/SayHello
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request
-	curl -X POST -k https://10.1.0.10:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
+	curl -X POST -k https://${SERVER_IP}:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
 
 .PHONY: run-greeter-http-client-via-proxy
 run-greeter-http-client-via-proxy: ## runs go run the application to issue http request
-	http_proxy="10.1.0.30:8080" \
-	https_proxy="10.1.0.30:8080" \
-	curl -X POST -k https://10.1.0.10:8080/v1/echo -d '{"name": "http-via-proxy"}' | python -m json.tool
+	http_proxy="172.31.1.20:8080" \
+	https_proxy="172.31.1.20:8080" \
+	curl -X POST -k https://${SERVER_IP}:8080/v1/echo -d '{"name": "http-via-proxy"}' | python -m json.tool
 
 .PHONY: help
 help: ## prints this help message
