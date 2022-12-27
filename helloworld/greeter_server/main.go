@@ -131,10 +131,10 @@ func CustomMatcher(key string) (string, bool) {
 // }
 
 func startServer(config util.Config) {
-	targetUri := fmt.Sprintf("%s:%d", config.ServerIp, config.GrpcListenPort)
+	targetUri := fmt.Sprintf("127.0.0.1:%d", config.GrpcListenPort)
 
 	// Create a listener on TCP port
-	lis, err := net.Listen("tcp", targetUri)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GrpcListenPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
