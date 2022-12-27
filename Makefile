@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-SERVER_IP?=192.168.1.10
+SERVER_IP?=172.31.1.30
 
 .PHONY: setup
 setup:	## setup go modules
@@ -21,15 +21,16 @@ setup-server-key: ## generate grpc server cert
 run-greeter-server: setup	## runs go run the application
 	sed 's/__SERVER_IP__/${SERVER_IP}/g' ./helloworld/greeter_server/app.env.tmpl > ./helloworld/greeter_server/app.env
 	cd helloworld/greeter_server && go build main.go
-	cd helloworld/greeter_server && ./main
+	cd helloworld/greeter_server && go run main.go
 
 # .PHONY: setup-ngx-key
 # setup-ngx-key: ## generate nginx server cert
 # 	cd /vagrant/nginx/ && SITE_NAME=172.31.1.20 /vagrant/provision/cert-gen.sh
 
-# .PHONY: run-ngxproxy
-# run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
-# 	docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
+.PHONY: run-ngxproxy
+run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
+	# docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
+	docker run --rm -it -v ${PWD}/nginx/nginx.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 -p 8081:8081 reiz/nginx_proxy
 
 .PHONY: run-squidproxy
 run-squidproxy:	## run squid proxy, and listen on port 8080 (http)

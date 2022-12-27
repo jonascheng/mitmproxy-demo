@@ -131,8 +131,10 @@ func CustomMatcher(key string) (string, bool) {
 // }
 
 func startServer(config util.Config) {
+	targetUri := fmt.Sprintf("%s:%d", config.ServerIp, config.GrpcListenPort)
+
 	// Create a listener on TCP port
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GrpcListenPort))
+	lis, err := net.Listen("tcp", targetUri)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -165,13 +167,14 @@ func startServer(config util.Config) {
 	// gRPC-Gateway forward HTTP request to the gRPC server
 	conn, err := grpc.DialContext(
 		context.Background(),
-		fmt.Sprintf("0.0.0.0:%d", config.GrpcListenPort),
+		targetUri,
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(dcreds),
 	)
 	if err != nil {
 		log.Fatalln("Failed to dial server:", err)
 	}
+	log.Println("gRPC-Gateway targetUri: ", targetUri)
 
 	gwmux := runtime.NewServeMux(
 		// runtime.WithMetadata(CustomMD),
