@@ -1,6 +1,13 @@
 .DEFAULT_GOAL := help
 
 SERVER_IP?=172.31.1.30
+HTTP_OVER_TLS?=1
+
+ifeq (${HTTP_OVER_TLS}, 1)
+	SCHEME=https
+else
+	SCHEME=http
+endif
 
 .PHONY: setup
 setup:	## setup go modules
@@ -20,6 +27,7 @@ setup-server-key: ## generate grpc server cert
 .PHONY: run-greeter-server
 run-greeter-server: setup	## runs go run the application
 	sed 's/__SERVER_IP__/${SERVER_IP}/g' ./helloworld/greeter_server/app.env.tmpl > ./helloworld/greeter_server/app.env
+	sed -i 's/__HTTP_OVER_TLS__/${HTTP_OVER_TLS}/g' ./helloworld/greeter_server/app.env
 	cd helloworld/greeter_server && go build main.go
 	cd helloworld/greeter_server && go run main.go
 
@@ -59,13 +67,13 @@ run-greeter-grpc-client-via-proxy: setup	## runs go run the application to issue
 
 .PHONY: run-greeter-http-client
 run-greeter-http-client: ## runs go run the application to issue http request
-	curl -X POST -k https://${SERVER_IP}:8080/v1/echo -d '{"name": "http"}' | python -m json.tool
+	curl -X POST -k ${SCHEME}://${SERVER_IP}:8080/v1/echo -d '{"name": "${SCHEME}"}' | python -m json.tool
 
 .PHONY: run-greeter-http-client-via-proxy
 run-greeter-http-client-via-proxy: ## runs go run the application to issue http request
 	http_proxy="172.31.1.20:8080" \
 	https_proxy="172.31.1.20:8080" \
-	curl -X POST -k https://${SERVER_IP}:8080/v1/echo -d '{"name": "http-via-proxy"}' | python -m json.tool
+	curl -X POST -k ${SCHEME}://${SERVER_IP}:8080/v1/echo -d '{"name": "${SCHEME}-via-proxy"}' | python -m json.tool
 
 .PHONY: help
 help: ## prints this help message

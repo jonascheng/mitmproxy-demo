@@ -9,6 +9,7 @@ type Config struct {
 	ServerListenPort uint32 `mapstructure:"SERVER_LISTEN_PORT"`
 	GrpcListenPort   uint32 `mapstructure:"GRPC_LISTEN_PORT"`
 	HttpListenPort   uint32 `mapstructure:"HTTP_LISTEN_PORT"`
+	HttpOverTLS      uint32 `mapstructure:"HTTP_OVER_TLS"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

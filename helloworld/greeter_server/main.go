@@ -190,7 +190,11 @@ func startServer(config util.Config) {
 		Handler: gwmux,
 	}
 	log.Printf("Serving gRPC-Gateway at [::]%d", config.HttpListenPort)
-	log.Fatalln(gwServer.ListenAndServeTLS("server-cert.pem", "server-key.pem"))
+	if config.HttpOverTLS == 1 {
+		log.Fatalln(gwServer.ListenAndServeTLS("server-cert.pem", "server-key.pem"))
+	} else {
+		log.Fatalln(gwServer.ListenAndServe())
+	}
 }
 
 func startUnifiedServer(config util.Config) {
