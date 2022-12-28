@@ -28,9 +28,8 @@ run-greeter-server: setup	## runs go run the application
 # 	cd /vagrant/nginx/ && SITE_NAME=172.31.1.20 /vagrant/provision/cert-gen.sh
 
 .PHONY: run-ngxproxy
-run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http) & 8081 (grpc)
-	# docker run --rm -it -v /vagrant/nginx/nginx.conf:/etc/nginx/nginx.conf:ro -v /vagrant/nginx/:/tmp/:ro -p 8080:8080 -p 8081:8081 nginx:alpine-slim
-	docker run --rm -it -v ${PWD}/nginx/nginx.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 -p 8081:8081 reiz/nginx_proxy
+run-ngxproxy:	## run nginx proxy, and listen on port 8080 (http)
+	docker run --rm -it -v ${PWD}/nginx/nginx.conf:/usr/local/nginx/conf/nginx.conf -p 8080:8080 reiz/nginx_proxy
 
 .PHONY: run-squidproxy
 run-squidproxy:	## run squid proxy, and listen on port 8080 (http)
